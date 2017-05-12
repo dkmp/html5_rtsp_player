@@ -1,3 +1,7 @@
+##分支修改
+
+1、主要解决live555接入视频音频播放问题，添加websocket转socket代理
+
 ## Overview
 
 Streamedian is a Javascript library which implements RTSP client for watching live streams in your browser
