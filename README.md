@@ -1,6 +1,6 @@
 ## 分支修改
 
-1、主要解决live555接入视频音频播放问题，添加websocket转socket代理
+1、主要解决live555接入视频音频播放问题，配合websocket转socket代理 https://github.com/dkmp/WSSProxy.git
 
 ## Overview
 
