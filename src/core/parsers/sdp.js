@@ -4,7 +4,7 @@ import {PayloadType} from '../defs.js';
 const Log = getTagged("parser:sdp");
 
 export class SDPParser {
-    constructor(){
+    constructor() {
         this.version = -1;
         this.origin = null;
         this.sessionName = null;
@@ -17,7 +17,7 @@ export class SDPParser {
 
     parse(content) {
         Log.debug(content);
-        return new Promise((resolve, reject)=>{
+        return new Promise((resolve, reject) => {
             var dataString = content;
             var success = true;
             var currentMediaBlock = this.sessionBlock;
@@ -97,13 +97,13 @@ export class SDPParser {
 
             this.media[currentMediaBlock.type] = currentMediaBlock;
 
-            success?resolve():reject();
+            success ? resolve() : reject();
         });
     }
 
     _parseVersion(line) {
-        var matches = line.match(/^v=([0-9]+)$/);
-        if (0 === matches.length) {
+        let matches = line.match(/^v=([0-9]+)$/);
+        if (!matches || !matches.length) {
             Log.log('\'v=\' (Version) formatted incorrectly: ' + line);
             return false;
         }
@@ -118,26 +118,26 @@ export class SDPParser {
     }
 
     _parseOrigin(line) {
-        var matches = line.match(/^o=([^ ]+) ([0-9]+) ([0-9]+) (IN) (IP4|IP6) ([^ ]+)$/);
-        if (0 === matches.length) {
+        let matches = line.match(/^o=([^ ]+) ([0-9]+) ([0-9]+) (IN) (IP4|IP6) ([^ ]+)$/);
+        if (!matches || !matches.length) {
             Log.log('\'o=\' (Origin) formatted incorrectly: ' + line);
             return false;
         }
 
         this.origin = {};
-        this.origin.username       = matches[1];
-        this.origin.sessionid      = matches[2];
+        this.origin.username = matches[1];
+        this.origin.sessionid = matches[2];
         this.origin.sessionversion = matches[3];
-        this.origin.nettype        = matches[4];
-        this.origin.addresstype    = matches[5];
+        this.origin.nettype = matches[4];
+        this.origin.addresstype = matches[5];
         this.origin.unicastaddress = matches[6];
 
         return true;
     }
 
     _parseSessionName(line) {
-        var matches = line.match(/^s=([^\r\n]+)$/);
-        if (0 === matches.length) {
+        let matches = line.match(/^s=([^\r\n]+)$/);
+        if (!matches || !matches.length) {
             Log.log('\'s=\' (Session Name) formatted incorrectly: ' + line);
             return false;
         }
@@ -148,30 +148,30 @@ export class SDPParser {
     }
 
     _parseTiming(line) {
-        var matches = line.match(/^t=([0-9]+) ([0-9]+)$/);
-        if (0 === matches.length) {
+        let matches = line.match(/^t=([0-9]+) ([0-9]+)$/);
+        if (!matches || !matches.length) {
             Log.log('\'t=\' (Timing) formatted incorrectly: ' + line);
             return false;
         }
 
         this.timing = {};
         this.timing.start = matches[1];
-        this.timing.stop  = matches[2];
+        this.timing.stop = matches[2];
 
         return true;
     }
 
     _parseMediaDescription(line, media) {
-        var matches = line.match(/^m=([^ ]+) ([^ ]+) ([^ ]+)[ ]/);
-        if (0 === matches.length) {
+        let matches = line.match(/^m=([^ ]+) ([^ ]+) ([^ ]+)[ ]/);
+        if (!matches || !matches.length) {
             Log.log('\'m=\' (Media) formatted incorrectly: ' + line);
             return false;
         }
 
-        media.type  = matches[1];
-        media.port  = matches[2];
+        media.type = matches[1];
+        media.port = matches[2];
         media.proto = matches[3];
-        media.fmt   = line.substr(matches[0].length).split(' ').map(function(fmt, index, array) {
+        media.fmt = line.substr(matches[0].length).split(' ').map(function (fmt, index, array) {
             return parseInt(fmt);
         });
 
@@ -188,9 +188,11 @@ export class SDPParser {
             return true;
         }
 
-        var matches; /* Used for some cases of below switch-case */
+        var matches;
+        /* Used for some cases of below switch-case */
         var separator = line.indexOf(':');
-        var attribute = line.substr(0, (-1 === separator) ? 0x7FFFFFFF : separator); /* 0x7FF.. is default */
+        var attribute = line.substr(0, (-1 === separator) ? 0x7FFFFFFF : separator);
+        /* 0x7FF.. is default */
 
         switch (attribute) {
             case 'a=recvonly':
@@ -199,9 +201,9 @@ export class SDPParser {
             case 'a=inactive':
                 media.mode = line.substr('a='.length);
                 break;
-case 'a=range':
+            case 'a=range':
                 matches = line.match(/^a=range:\s*([a-zA-Z-]+)=([0-9.]+|now)\s*-\s*([0-9.]*)$/);
-                media.range= [Number(matches[2]=="now"?-1:matches[2]), Number(matches[3]), matches[1]];
+                media.range = [Number(matches[2] == "now" ? -1 : matches[2]), Number(matches[3]), matches[1]];
                 break;
             case 'a=control':
                 media.control = line.substr('a=control:'.length);
@@ -218,7 +220,7 @@ case 'a=range':
                 media.rtpmap[payload] = {};
 
                 var attrs = matches[2].split('/');
-                media.rtpmap[payload].name  = attrs[0].toUpperCase();
+                media.rtpmap[payload].name = attrs[0].toUpperCase();
                 media.rtpmap[payload].clock = attrs[1];
                 if (undefined !== attrs[2]) {
                     media.rtpmap[payload].encparams = attrs[2];

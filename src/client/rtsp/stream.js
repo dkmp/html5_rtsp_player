@@ -1,6 +1,6 @@
 import {getTagged} from '../../deps/bp_logger.js';
 
-import {RTSPClientSM as RTSPClient}  from './client.js';
+import {RTSPClientSM as RTSPClient} from './client.js';
 import {Url} from '../../core/util/url.js';
 
 const LOG_TAG = "rtsp:stream";
@@ -34,7 +34,7 @@ export class RTSPStream {
     }
 
     getSetupURL(track) {
-        var sessionBlock = this.client.sdp.getSessionBlock();
+        let sessionBlock = this.client.sdp.getSessionBlock();
         if (Url.isAbsolute(track.control)) {
             return track.control;
         } else if (Url.isAbsolute(`${sessionBlock.control}${track.control}`)) {
@@ -43,8 +43,9 @@ export class RTSPStream {
             /* Should probably check session level control before this */
             return `${this.client.contentBase}${track.control}`;
         }
-        else//need return default 
+        else {//need return default
             return track.control;
+        }
         Log.error('Can\'t determine track URL from ' +
             'block.control:' + track.control + ', ' +
             'session.control:' + sessionBlock.control + ', and ' +
@@ -73,15 +74,15 @@ export class RTSPStream {
     }
 
     startKeepAlive() {
-        this.keepaliveInterval = setInterval(()=>{
-            this.sendKeepalive().catch((e)=>{
+        this.keepaliveInterval = setInterval(() => {
+            this.sendKeepalive().catch((e) => {
                 Log.error(e);
                 this.client.reconnect();
             });
         }, 30000);
     }
 
-    sendRequest(_cmd, _params={}) {
+    sendRequest(_cmd, _params = {}) {
         let params = {};
         if (this.session) {
             params['Session'] = this.session;
@@ -97,7 +98,7 @@ export class RTSPStream {
         return this.client.sendRequest('SETUP', this.getSetupURL(this.track), {
             'Transport': `RTP/AVP/TCP;unicast;interleaved=${interleavedChannels}`,
             'Date': new Date().toUTCString()
-        }).then((_data)=>{
+        }).then((_data) => {
             this.session = _data.headers['session'];
             /*if (!/RTP\/AVP\/TCP;unicast;interleaved=/.test(_data.headers["transport"])) {
                 // TODO: disconnect stream and notify client
@@ -107,22 +108,21 @@ export class RTSPStream {
         });
     }
 
-    sendPlay(pos=0) {
+    sendPlay(pos = 0) {
         this.state = RTSPStream.STATE_PLAY;
         let params = {};
         let range = this.client.sdp.sessionBlock.range;
         if (range) {
             // TODO: seekable
-            if (range[0]==-1) {
-                range[0]=0;// Do not handle now at the moment
+            if (range[0] == -1) {
+                range[0] = 0;// Do not handle now at the moment
             }
             // params['Range'] = `${range[2]}=${range[0]}-`;
         }
-        return this.sendRequest('PLAY', params).then((_data)=>{
-            this.client.useRTPChannel(this.rtpChannel);
-            this.state = RTSPClient.STATE_PLAYING;
-            return {track:this.track, data: _data};
-        });
+        this.client.useRTPChannel(this.rtpChannel);
+        let data = this.sendRequest('PLAY', params);
+        this.state = RTSPClient.STATE_PLAYING;
+        return {track: this.track, data: data};
     }
 
     sendPause() {
@@ -130,9 +130,8 @@ export class RTSPStream {
             return;
         }
         this.state = RTSPClient.STATE_PAUSE;
-        return this.sendRequest("PAUSE").then((_data)=>{
-            this.state = RTSPClient.STATE_PAUSED;
-        });
+        this.sendRequest("PAUSE");
+        this.state = RTSPClient.STATE_PAUSED;
     }
 
     sendTeardown() {
@@ -140,11 +139,10 @@ export class RTSPStream {
             this.client.forgetRTPChannel(this.rtpChannel);
             this.state = RTSPClient.STATE_TEARDOWN;
             this.stopKeepAlive();
-            return this.sendRequest("TEARDOWN").then(()=> {
-                Log.log('RTSPClient: STATE_TEARDOWN');
-                ///this.client.connection.disconnect();
-                // TODO: Notify client
-            });
+            this.sendRequest("TEARDOWN");
+            Log.log('RTSPClient: STATE_TEARDOWN');
+            ///this.client.connection.disconnect();
+            // TODO: Notify client
         }
     }
 }

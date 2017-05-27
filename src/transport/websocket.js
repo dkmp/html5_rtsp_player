@@ -223,7 +223,7 @@ class WebSocketProxy {
                 }
 
                 this.dataChannel.onmessage=(e)=>{
-                    Log.debug('got data');
+                    //Log.debug('got data');
                     if (this.data_handler) {
                         this.data_handler(e.data);
                     }

@@ -75,7 +75,7 @@ export class AACAsm {
                 if (aacData[offset] !=255) break;
                 ++offset;
             }
-            //++offset;
+            ++offset;
             return [new AACFrame(rawData.subarray(auHeadersLengthPadded+offset), ts)];
         }
     }

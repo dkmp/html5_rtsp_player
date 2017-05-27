@@ -85,6 +85,12 @@ export default class RTSPClient extends BaseClient {
     }
 }
 
+class AuthError extends Error {
+    constructor(msg) {
+        super(msg);
+    }
+}
+
 export class RTSPClientSM extends StateMachine {
     static get USER_AGENT() {return 'SFRtsp 0.3';}
     static get STATE_INITIAL() {return  1 << 0;}
@@ -168,7 +174,7 @@ export class RTSPClientSM extends StateMachine {
     setSource(url) {
         this.reset();
         this.endpoint = url;
-        this.url = url.urlpath;
+        this.url = url.full;
     }
 
     onConnected() {
@@ -216,6 +222,7 @@ export class RTSPClientSM extends StateMachine {
     }
 
     reset() {
+        this.authenticator = '';
         this.methods = [];
         this.tracks = [];
         for (let stream in this.streams) {
@@ -273,26 +280,61 @@ export class RTSPClientSM extends StateMachine {
             CSeq: this.cSeq,
             'User-Agent': RTSPClientSM.USER_AGENT
         });
-        if (_host != '*' && this.parent.endpoint.auth) {
-            // TODO: DIGEST authentication
-            _params['Authorization'] = `Basic ${btoa(this.parent.endpoint.auth)}`;
+        if (this.authenticator) {
+            _params['Authorization'] = this.authenticator(_cmd);
         }
-        return this.send(MessageBuilder.build(_cmd, _host, _params, _payload));
+        return this.send(MessageBuilder.build(_cmd, _host, _params, _payload), _cmd).catch((e)=>{
+            if (e instanceof AuthError) {
+                return this.sendRequest(_cmd, _host, _params, _payload);
+            } else {
+                throw e;
+            }
+        });
     }
 
-    send(_data) {
+    send(_data, _method) {
         if (this.transport) {
             return this.transport.ready.then(() => {
                 Log.debug(_data);
                 return this.transport.send(_data).then(this.parse.bind(this)).then((parsed) => {
                     // TODO: parse status codes
+                    if (parsed.code == 401 && !this.authenticator ) {
+                        Log.debug(parsed.headers['www-authenticate']);
+                        let auth = parsed.headers['www-authenticate'];
+                        let method = auth.substring(0, auth.indexOf(' '));
+                        auth = auth.substr(method.length+1);
+                        let chunks = auth.split(',');
+                        if (method.toLowerCase() == 'digest') {
+                            let parsedChunks = {};
+                            for (let chunk of chunks) {
+                                let c = chunk.trim();
+                                let [k,v] = c.split('=');
+                                parsedChunks[k] = v.substr(1, v.length-2);
+                            }
+                            this.authenticator = (_method)=>{
+                                let ep = this.parent.endpoint;
+                                let ha1 = md5(`${ep.user}:${parsedChunks.realm}:${ep.pass}`);
+                                let ha2 = md5(`${_method}:${ep.urlpath}`);
+                                let response = md5(`${ha1}:${parsedChunks.nonce}:${ha2}`);
+                                let tail=''; // TODO: handle other params
+                                return `Digest username="${ep.user}", nonce="${parsedChunks.nonce}", uri="${ep.urlpath}", response="${response}"${tail}`;
+                            }
+                        } else {
+                            this.authenticator = ()=>{return `Basic ${btoa(this.parent.endpoint.auth)}`;};
+                        }
+
+                        throw new AuthError(parsed);
+                    }
                     if (parsed.code >= 300) {
                         Log.error(parsed.statusLine);
-                        throw new Error(`RTSP error: ${parsed.code} ${parsed.message}`);
+                        throw new Error(`RTSP error: ${parsed.code} ${parsed.statusLine}`);
                     }
                     return parsed;
                 });
-            }).catch(this.onDisconnected.bind(this));
+            }).catch((e)=>{
+                this.onDisconnected.bind(this);
+                throw e;
+            });
         } else {
             return Promise.reject("No transport attached");
         }

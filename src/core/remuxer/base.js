@@ -82,7 +82,7 @@ export class BaseRemuxer {
     init(initPTS, initDTS, shouldInitialize=true) {
         this.initPTS = Math.min(initPTS, this.samples[0].dts - this.unscaled(this.timeOffset));
         this.initDTS = Math.min(initDTS, this.samples[0].dts - this.unscaled(this.timeOffset));
-        Log.debug(`Initial pts=${this.initPTS} dts=${this.initDTS}`);
+        Log.debug(`Initial pts=${this.initPTS} dts=${this.initDTS} offset=${this.unscaled(this.timeOffset)}`);
         this.initialized = shouldInitialize;
     }
 
@@ -92,47 +92,49 @@ export class BaseRemuxer {
         this.mp4track.samples = [];
     }
 
+    static dtsSortFunc(a,b) {
+        return (a.dts-b.dts);
+    }
+
     getPayloadBase(sampleFunction, setupSample) {
         if (!this.readyToDecode || !this.initialized || !this.samples.length) return null;
-        this.samples.sort(function(a, b) {
-            return (a.dts-b.dts);
-        });
+        this.samples.sort(BaseRemuxer.dtsSortFunc);
         return true;
-
-        let payload = new Uint8Array(this.mp4track.len);
-        let offset = 0;
-        let samples=this.mp4track.samples;
-        let mp4Sample, lastDTS, pts, dts;
-
-        while (this.samples.length) {
-            let sample = this.samples.shift();
-            if (sample === null) {
-                // discontinuity
-                this.nextDts = undefined;
-                break;
-            }
-
-            let unit = sample.unit;
-
-            pts = Math.round((sample.pts - this.initDTS)/this.tsAlign)*this.tsAlign;
-            dts = Math.round((sample.dts - this.initDTS)/this.tsAlign)*this.tsAlign;
-            // ensure DTS is not bigger than PTS
-            dts = Math.min(pts, dts);
-
-            // sampleFunction(pts, dts);   // TODO:
-
-            // mp4Sample = setupSample(unit, pts, dts);    // TODO:
-
-            payload.set(unit.getData(), offset);
-            offset += unit.getSize();
-
-            samples.push(mp4Sample);
-            lastDTS = dts;
-        }
-        if (!samples.length) return null;
-
-        // samplesPostFunction(samples); // TODO:
-
-        return new Uint8Array(payload.buffer, 0, this.mp4track.len);
+        //
+        // let payload = new Uint8Array(this.mp4track.len);
+        // let offset = 0;
+        // let samples=this.mp4track.samples;
+        // let mp4Sample, lastDTS, pts, dts;
+        //
+        // while (this.samples.length) {
+        //     let sample = this.samples.shift();
+        //     if (sample === null) {
+        //         // discontinuity
+        //         this.nextDts = undefined;
+        //         break;
+        //     }
+        //
+        //     let unit = sample.unit;
+        //
+        //     pts = Math.round((sample.pts - this.initDTS)/this.tsAlign)*this.tsAlign;
+        //     dts = Math.round((sample.dts - this.initDTS)/this.tsAlign)*this.tsAlign;
+        //     // ensure DTS is not bigger than PTS
+        //     dts = Math.min(pts, dts);
+        //
+        //     // sampleFunction(pts, dts);   // TODO:
+        //
+        //     // mp4Sample = setupSample(unit, pts, dts);    // TODO:
+        //
+        //     payload.set(unit.getData(), offset);
+        //     offset += unit.getSize();
+        //
+        //     samples.push(mp4Sample);
+        //     lastDTS = dts;
+        // }
+        // if (!samples.length) return null;
+        //
+        // // samplesPostFunction(samples); // TODO:
+        //
+        // return new Uint8Array(payload.buffer, 0, this.mp4track.len);
     }
 }

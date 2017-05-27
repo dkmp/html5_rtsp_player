@@ -7,6 +7,8 @@ export class NALU {
     static get SEI() {return 6;}
     static get SPS() {return 7;}
     static get PPS() {return 8;}
+    static get FU_A() {return 28;}
+    static get FU_B() {return 29;}
 
     static get TYPES() {return {
         [NALU.IDR]: 'IDR',
@@ -36,6 +38,14 @@ export class NALU {
 
     appendData(idata) {
         this.data = appendByteArray(this.data, idata);
+    }
+
+    toString() {
+        return `${NALU.type(this)}: NRI: ${this.getNri()}, PTS: ${this.pts}, DTS: ${this.dts}`;
+    }
+
+    getNri() {
+        return this.nri >> 6;
     }
 
     type() {

@@ -64,6 +64,7 @@ export class WSPlayer {
                 constructor: DEFAULT_TRANSPORT
             }
         };
+        this.errorHandler = opts.errorHandler || null;
 
         this.modules = {};
         for (let module of modules) {
@@ -199,19 +200,39 @@ export class WSPlayer {
         this.client.setSource(this.endpoint);
 
         if (this.player.autoplay) {
-            this.client.start();
+            this.start();
         }
     }
 
     start() {
         if (this.client) {
-            this.client.start();
+            this.client.start().catch((e)=>{
+                if (this.errorHandler) {
+                    this.errorHandler(e);
+                }
+            });
         }
     }
 
     stop() {
         if (this.client) {
             this.client.stop();
+        }
+    }
+
+    destroy() {
+        if (this.transport) {
+            if (this.client) {
+                this.client.detachTransport();
+            }
+            this.transport.destroy();
+        }
+        if (this.client) {
+            this.client.destroy();
+        }
+        if (this.remuxer) {
+            this.remuxer.destroy();
+            this.remuxer = null;
         }
     }
 
