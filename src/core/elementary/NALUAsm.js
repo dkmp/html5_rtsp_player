@@ -67,7 +67,9 @@ export class NALUAsm {
                     this.dts_l = dts;
                 }else{
                     ret = this.shiftTemp(null);
-                    console.log("fu packet error");
+		    if(this.nalu_l){
+			this.nalu_l.appendData(rawData.subarray(nal_start_idx));
+		    }
                 }
             }else{
                 if(this.nalu_l!=null){

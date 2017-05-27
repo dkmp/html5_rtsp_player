@@ -215,7 +215,7 @@ export class RTSPClientSM extends StateMachine {
         // this.mse = null;
     }
 
-    async reset() {
+    reset() {
         this.methods = [];
         this.tracks = [];
         for (let stream in this.streams) {
@@ -225,11 +225,11 @@ export class RTSPClientSM extends StateMachine {
         this.contentBase = "";
         if (this.currentState) {
             if (this.currentState.name != RTSPClientSM.STATE_INITIAL) {
-                await this.transitionTo(RTSPClientSM.STATE_TEARDOWN);
-                await this.transitionTo(RTSPClientSM.STATE_INITIAL);
+                this.transitionTo(RTSPClientSM.STATE_TEARDOWN);
+                this.transitionTo(RTSPClientSM.STATE_INITIAL);
             }
         } else {
-            await this.transitionTo(RTSPClientSM.STATE_INITIAL);
+            this.transitionTo(RTSPClientSM.STATE_INITIAL);
         }
         this.state = RTSPClientSM.STATE_INITIAL;
         this.sdp = null;
@@ -238,11 +238,11 @@ export class RTSPClientSM extends StateMachine {
         this.timeOffset = {};
     }
 
-    async reconnect() {
+    reconnect() {
         //this.parent.eventSource.dispatchEvent('clear');
-        await this.reset();
+        this.reset();
         if (this.currentState.name != RTSPClientSM.STATE_INITIAL) {
-            await this.transitionTo(RTSPClientSM.STATE_TEARDOWN);
+            this.transitionTo(RTSPClientSM.STATE_TEARDOWN);
             return this.transitionTo(RTSPClientSM.STATE_OPTIONS);
         } else {
             return this.transitionTo(RTSPClientSM.STATE_OPTIONS);

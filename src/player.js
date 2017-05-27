@@ -156,12 +156,12 @@ export class WSPlayer {
         return false;
     }
 
-    async setSource(url, type) {
+    setSource(url, type) {
         if (this.transport) {
             if (this.client) {
-                await this.client.detachTransport();
+                this.client.detachTransport();
             }
-            await this.transport.destroy();
+            this.transport.destroy();
         }
         try {
             this.endpoint = Url.parse(url);
@@ -181,7 +181,7 @@ export class WSPlayer {
 
         if (lastType!=this.type || !this.client) {
             if (this.client) {
-                await this.client.destroy();
+                this.client.destroy();
             }
             let client = this.modules[type].client;
             this.client = new client();
