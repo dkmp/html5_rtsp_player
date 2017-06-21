@@ -3350,6 +3350,7 @@ class AACFrame {
 class AACAsm {
     constructor() {
         this.config = null;
+		this.ts = null;
     }
 
     onAACFragment(pkt) {
@@ -3375,7 +3376,14 @@ class AACAsm {
 
         let auHeadersLengthPadded = 0;
         let offset = 0;
-        let ts = (Math.round(pkt.getTimestampMS()/1024) << 10) * 90000 / this.config.samplerate;
+		if(this.ts==null)
+        {
+			this.ts = (Math.round(pkt.getTimestampMS()/1024) << 10) * 90000 / this.config.samplerate;
+		}
+		else
+		{
+			this.ts+=1024*90000/this.config.samplerate;
+		}
         if (0 !== configHeaderLength) {
             /* The AU header section is not empty, read it from payload */
             let auHeadersLengthInBits = data.getUint16(0); // Always 2 octets, without padding
