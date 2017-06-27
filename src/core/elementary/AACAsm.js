@@ -73,7 +73,7 @@ export class AACAsm {
                     bits.skipBits(StreamStateIndication);
                     offset+=StreamStateIndication;
                 }
-                frames.push(new AACFrame(rawData.subarray(auHeadersLengthPadded + frameOffset, auHeadersLengthPadded + frameOffset + size), ts+dts, ts+cts));
+                frames.push(new AACFrame(rawData.subarray(auHeadersLengthPadded + frameOffset, auHeadersLengthPadded + frameOffset + size), this.ts+dts, this.ts+cts));
                 frameOffset+=size;
             }
             return frames;
@@ -84,7 +84,7 @@ export class AACAsm {
                 ++offset;
             }
             ++offset;
-            return [new AACFrame(rawData.subarray(auHeadersLengthPadded+offset), ts)];
+            return [new AACFrame(rawData.subarray(auHeadersLengthPadded+offset), this.ts)];
         }
     }
 }
